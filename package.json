@@ -1,0 +1,45 @@
+{
+  "name": "mobile-preview",
+  "version": "0.1.0",
+  "description": "Automated mobile preview pipeline tool for Expo and React Native applications",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "mobile-preview": "dist/cli.js"
+  },
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": [
+    "expo",
+    "react-native",
+    "preview",
+    "ci",
+    "eas-update",
+    "mobile"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^12.1.0",
+    "execa": "^8.0.1",
+    "minimatch": "^9.0.5",
+    "picocolors": "^1.1.0",
+    "prompts": "^2.4.2",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/prompts": "^2.4.9",
+    "tsup": "^8.3.0",
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.5"
+  }
+}
