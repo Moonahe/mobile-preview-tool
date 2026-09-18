@@ -1,0 +1,36 @@
+{
+  "provider": "expo",
+  "appDirectory": ".",
+  "preview": {
+    "channel": "preview",
+    "branch": "preview",
+    "platforms": ["android", "ios"]
+  },
+  "nativeBuild": {
+    "provider": "gradle",
+    "android": {
+      "enabled": true,
+      "artifact": "apk"
+    },
+    "ios": {
+      "enabled": false
+    }
+  },
+  "publish": {
+    "provider": "github-release",
+    "repository": "auto",
+    "releaseTag": "mobile-preview-demo"
+  },
+  "detection": {
+    "nativePaths": [
+      "android/**",
+      "ios/**",
+      "app.config.js",
+      "app.config.ts",
+      "app.json",
+      "expo.json"
+    ],
+    "nativeDependencies": true,
+    "nativePackages": []
+  }
+}

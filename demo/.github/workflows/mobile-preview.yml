@@ -1,0 +1,40 @@
+name: Mobile Preview (Demo)
+
+on:
+  push:
+    branches:
+      - '**'
+
+concurrency:
+  group: mobile-preview-demo-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Mobile Preview Detection
+        run: npx mobile-preview detect --json
+        working-directory: demo
+
+      - name: Mobile Preview Publish
+        run: npx mobile-preview publish
+        working-directory: demo
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
