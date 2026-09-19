@@ -17,6 +17,10 @@ jobs:
     permissions:
       contents: write
 
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -48,16 +52,11 @@ jobs:
         working-directory: demo
 
       - name: Mobile Preview Publish on Demo App (Live)
-        if: ${{ secrets.EXPO_TOKEN != '' }}
+        if: ${{ env.EXPO_TOKEN != '' }}
         run: node ../dist/cli.js publish
         working-directory: demo
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Mobile Preview Publish on Demo App (Dry Run)
-        if: ${{ secrets.EXPO_TOKEN == '' }}
+        if: ${{ env.EXPO_TOKEN == '' }}
         run: node ../dist/cli.js publish --dry-run
         working-directory: demo
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
