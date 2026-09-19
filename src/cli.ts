@@ -39,6 +39,7 @@ program
   .option('--branch <branch>', 'EAS update branch')
   .option('--channel <channel>', 'EAS update channel')
   .option('--message <message>', 'Update message')
+  .option('--dry-run', 'Simulate update without publishing')
   .action(async (options) => {
     await runUpdate(options);
   });
@@ -47,6 +48,7 @@ program
   .command('build')
   .description('Build native application (Android APK / iOS)')
   .option('--platform <platform>', 'Target platform (android or ios)', 'android')
+  .option('--dry-run', 'Simulate build process')
   .action(async (options) => {
     await runBuild(options);
   });
@@ -54,8 +56,9 @@ program
 program
   .command('publish')
   .description('Detect changes and orchestrate update or native build + release')
-  .action(async () => {
-    await runPublish();
+  .option('--dry-run', 'Simulate update or build without executing remote publishing')
+  .action(async (options) => {
+    await runPublish(options);
   });
 
 program

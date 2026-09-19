@@ -1,7 +1,8 @@
 {
   "expo": {
     "name": "Mobile Preview Demo",
-    "slug": "mobile-preview-demo",
+    "owner": "moonahes-team",
+    "slug": "demo-preview",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -25,7 +26,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "demo-preview-project-id"
+        "projectId": "850543b1-360d-4655-806b-92386cb2aefc"
       }
     }
   }

@@ -1,6 +1,5 @@
 import pc from 'picocolors';
 import fs from 'node:fs';
-import path from 'node:path';
 import { loadConfig } from '../config/loader.js';
 import { detectChanges } from '../detection/change-detector.js';
 import { runUpdate } from './update.js';
@@ -14,6 +13,7 @@ export interface PublishCommandOptions {
   updateProvider?: UpdateProvider;
   buildProvider?: BuildProvider;
   publisher?: ArtifactPublisher;
+  dryRun?: boolean;
 }
 
 export async function runPublish(options: PublishCommandOptions = {}): Promise<void> {
@@ -29,6 +29,7 @@ export async function runPublish(options: PublishCommandOptions = {}): Promise<v
     await runUpdate({
       cwd,
       provider: options.updateProvider,
+      dryRun: options.dryRun,
     });
     return;
   }
@@ -38,7 +39,13 @@ export async function runPublish(options: PublishCommandOptions = {}): Promise<v
     cwd,
     platform: 'android',
     provider: options.buildProvider,
+    dryRun: options.dryRun,
   });
+
+  if (options.dryRun) {
+    console.log(pc.yellow('[Dry Run] Skipping artifact upload step.'));
+    return;
+  }
 
   if (!artifactPath || !fs.existsSync(artifactPath)) {
     console.log(pc.yellow('No artifact produced or found to publish. Skipping release upload.'));

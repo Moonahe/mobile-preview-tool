@@ -1,4 +1,4 @@
-import { execa } from 'execa';
+import { execEas } from '../utils/exec-eas.js';
 import type { UpdateProvider, UpdateOptions, UpdateResult } from './types.js';
 
 export class EasUpdateProvider implements UpdateProvider {
@@ -7,9 +7,19 @@ export class EasUpdateProvider implements UpdateProvider {
     const branch = options.branch || 'preview';
     const message = options.message || `Update for commit ${options.commitSha || 'HEAD'}`;
 
+    if (options.dryRun) {
+      console.log(`[Dry Run] Simulated EAS update publish for branch '${branch}'`);
+      return {
+        success: true,
+        channel: options.channel || branch,
+        branch,
+        message: '[Dry Run] EAS update simulated successfully',
+      };
+    }
+
     try {
       const args = ['update', '--branch', branch, '--message', message, '--non-interactive'];
-      const { stdout } = await execa('eas', args, { cwd });
+      const { stdout } = await execEas(args, { cwd });
 
       return {
         success: true,

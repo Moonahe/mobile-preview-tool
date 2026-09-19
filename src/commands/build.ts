@@ -8,6 +8,7 @@ export interface BuildCommandOptions {
   cwd?: string;
   platform?: 'android' | 'ios';
   provider?: BuildProvider;
+  dryRun?: boolean;
 }
 
 export async function runBuild(options: BuildCommandOptions = {}): Promise<string | undefined> {
@@ -24,7 +25,12 @@ export async function runBuild(options: BuildCommandOptions = {}): Promise<strin
   console.log(pc.bold('\nMobile Preview\n'));
   console.log('Classification: Native');
   console.log(`Platform:       ${platform}`);
-  console.log(`Provider:       ${config.nativeBuild.provider}\n`);
+  console.log(`Provider:       ${config.nativeBuild.provider}`);
+  if (options.dryRun) {
+    console.log(pc.yellow('Mode:           Dry Run\n'));
+  } else {
+    console.log('');
+  }
   console.log('Building Native Application...\n');
 
   let provider: BuildProvider;
@@ -40,6 +46,7 @@ export async function runBuild(options: BuildCommandOptions = {}): Promise<strin
     cwd,
     platform,
     command: config.nativeBuild.android.command,
+    dryRun: options.dryRun,
   });
 
   if (result.success) {

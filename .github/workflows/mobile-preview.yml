@@ -1,0 +1,62 @@
+name: Mobile Preview Demo Pipeline
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+
+concurrency:
+  group: mobile-preview-demo-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Root Dependencies
+        run: npm ci
+
+      - name: Install Demo Dependencies
+        run: npm install
+        working-directory: demo
+
+      - name: Install EAS CLI Globally
+        run: npm install -g eas-cli
+
+      - name: Build Mobile Preview Tool
+        run: npm run build
+
+      - name: Run Mobile Preview Doctor on Demo App
+        run: node ../dist/cli.js doctor
+        working-directory: demo
+
+      - name: Run Mobile Preview Detection on Demo App
+        run: node ../dist/cli.js detect --json
+        working-directory: demo
+
+      - name: Mobile Preview Publish on Demo App (Live)
+        if: ${{ env.EXPO_TOKEN != '' }}
+        run: node ../dist/cli.js publish
+        working-directory: demo
+
+      - name: Mobile Preview Publish on Demo App (Dry Run)
+        if: ${{ env.EXPO_TOKEN == '' }}
+        run: node ../dist/cli.js publish --dry-run
+        working-directory: demo
