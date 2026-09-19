@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Mobile Preview Demo",
-    "slug": "mobile-preview-demo",
+    "slug": "demo-preview",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
