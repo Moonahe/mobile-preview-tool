@@ -5,7 +5,7 @@ This directory contains a sample Expo application used to showcase and test `mob
 ## Project Structure
 
 - `App.js`: Sample Expo React Native application component.
-- `app.json`: Expo configuration file.
+- `app.json`: Expo configuration file (`slug: demo-preview`, `owner: moonahes-team`).
 - `mobile-preview.config.json`: Pre-configured `mobile-preview` settings for this demo app.
 - `.github/workflows/mobile-preview.yml`: Example GitHub Actions workflow for automated preview pipelines.
 

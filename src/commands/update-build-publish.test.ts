@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { runUpdate } from './update.js';
 import { runBuild } from './build.js';
 import { runPublish } from './publish.js';
-import type { UpdateProvider, BuildProvider, ArtifactPublisher } from '../providers/types.js';
+import type { UpdateProvider, BuildProvider } from '../providers/types.js';
 
 describe('Update, Build, and Publish Commands', () => {
   it('runs update with mock provider successfully', async () => {
