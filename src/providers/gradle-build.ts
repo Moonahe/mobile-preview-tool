@@ -32,6 +32,18 @@ export class GradleBuildProvider implements BuildProvider {
 
     const androidDir = fs.existsSync(path.join(cwd, 'android')) ? path.join(cwd, 'android') : cwd;
 
+    // Check if gradlew script exists when executing ./gradlew
+    if (cmd === './gradlew' || cmd === 'gradlew') {
+      const gradlewPath = path.join(androidDir, 'gradlew');
+      if (!fs.existsSync(gradlewPath)) {
+        return {
+          success: false,
+          platform: 'android',
+          error: `Gradle wrapper ('./gradlew') not found in ${androidDir}. For Expo projects, set "nativeBuild.provider": "eas" in mobile-preview.config.json or run "npx expo prebuild".`,
+        };
+      }
+    }
+
     try {
       await execa(cmd, args, { cwd: androidDir });
 

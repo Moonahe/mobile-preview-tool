@@ -7,7 +7,7 @@
     "platforms": ["android", "ios"]
   },
   "nativeBuild": {
-    "provider": "gradle",
+    "provider": "eas",
     "android": {
       "enabled": true,
       "artifact": "apk"
@@ -31,6 +31,7 @@
       "expo.json"
     ],
     "nativeDependencies": true,
-    "nativePackages": []
+    "nativePackages": [],
+    "useFingerprint": true
   }
 }
