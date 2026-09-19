@@ -17,6 +17,25 @@ Automated mobile preview pipeline tool for Expo and React Native applications.
 
 ---
 
+## Demo App
+
+A pre-configured sample application is available in the [`demo/`](./demo) directory to showcase and test `mobile-preview` features.
+
+```bash
+# Navigate to demo app directory
+cd demo
+
+# Run environment health check
+npx mobile-preview doctor
+
+# Test change classification
+npx mobile-preview detect
+```
+
+See [`demo/README.md`](./demo/README.md) for detailed instructions on testing OTA updates vs native builds with the demo app.
+
+---
+
 ## Installation
 
 You can run `mobile-preview` using `npx` or install it locally in your project:
