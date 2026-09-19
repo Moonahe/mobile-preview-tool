@@ -1,6 +1,7 @@
 {
   "expo": {
     "name": "Mobile Preview Demo",
+    "owner": "moonahes-team",
     "slug": "demo-preview",
     "version": "1.0.0",
     "orientation": "portrait",
