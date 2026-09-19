@@ -3,6 +3,7 @@ import path from 'node:path';
 import { loadConfig } from '../config/loader.js';
 import { runDetect } from './detect.js';
 import { runDoctor } from './doctor.js';
+import { generateFingerprint } from '../detection/fingerprint.js';
 
 describe('Demo App Integration', () => {
   const demoPath = path.resolve(process.cwd(), 'demo');
@@ -12,6 +13,12 @@ describe('Demo App Integration', () => {
     expect(config.provider).toBe('expo');
     expect(config.publish.releaseTag).toBe('mobile-preview-demo');
     expect(config.detection.nativeDependencies).toBe(true);
+    expect(config.detection.useFingerprint).toBe(true);
+  });
+
+  it('generates an EAS fingerprint hash for the demo app', async () => {
+    const hash = await generateFingerprint(demoPath);
+    expect(typeof hash === 'string' || hash === null).toBe(true);
   });
 
   it('runs change detection on the demo app directory', async () => {

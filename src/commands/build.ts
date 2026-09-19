@@ -2,6 +2,7 @@ import pc from 'picocolors';
 import { loadConfig } from '../config/loader.js';
 import { GradleBuildProvider } from '../providers/gradle-build.js';
 import { EasBuildProvider } from '../providers/eas-build.js';
+import { generateFingerprint, saveStoredFingerprint } from '../detection/fingerprint.js';
 import type { BuildProvider } from '../providers/types.js';
 
 export interface BuildCommandOptions {
@@ -51,6 +52,16 @@ export async function runBuild(options: BuildCommandOptions = {}): Promise<strin
 
   if (result.success) {
     console.log(pc.green('✓ Native build completed successfully\n'));
+
+    // Record EAS Fingerprint upon successful build
+    if (config.detection.useFingerprint !== false) {
+      const fingerprint = await generateFingerprint(cwd);
+      if (fingerprint) {
+        saveStoredFingerprint(cwd, fingerprint);
+        console.log(pc.gray(`Recorded EAS fingerprint: ${fingerprint.slice(0, 8)}`));
+      }
+    }
+
     return result.artifactPath;
   } else {
     console.error(pc.red(`✗ Native build failed: ${result.error}`));

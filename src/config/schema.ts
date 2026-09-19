@@ -41,6 +41,7 @@ export const DetectionConfigSchema = z.object({
   ]),
   nativeDependencies: z.boolean().default(true),
   nativePackages: z.array(z.string()).default([]),
+  useFingerprint: z.boolean().default(true),
 });
 
 export const MobilePreviewConfigSchema = z.object({

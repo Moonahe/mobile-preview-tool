@@ -8,7 +8,7 @@ Automated mobile preview pipeline tool for Expo and React Native applications.
 
 ## Key Features
 
-- **Automated Change Detection**: Automatically classifies changes between commits as `JavaScript`, `Native`, or `Configuration`.
+- **Automated Change Detection**: Automatically classifies changes using EAS Fingerprint hash comparison (`@expo/fingerprint`) and Git diffs to detect native vs JS updates.
 - **EAS Update Integration**: Instantly publishes Over-The-Air (OTA) updates when only JavaScript or bundle assets change.
 - **Native Build Pipeline**: Triggers native application builds (Gradle APK or EAS Build) and releases when native code or dependencies change.
 - **CI/CD Integration**: Generates GitHub Actions workflow configuration out of the box with `mobile-preview init`.
@@ -228,6 +228,7 @@ When you run `mobile-preview init`, a `mobile-preview.config.json` file is gener
 - **`detection.nativePaths`**: Glob patterns that trigger native builds when modified.
 - **`detection.nativeDependencies`**: Automatically detect native package dependency changes in `package.json` (default: `true`).
 - **`detection.nativePackages`**: Explicit list of package names that should trigger native builds on version change.
+- **`detection.useFingerprint`**: Utilize `@expo/fingerprint` to determine if native state changed or if an initial native build is required (default: `true`).
 
 ---
 

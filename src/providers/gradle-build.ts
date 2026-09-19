@@ -15,6 +15,16 @@ export class GradleBuildProvider implements BuildProvider {
       };
     }
 
+    if (options.dryRun) {
+      console.log('[Dry Run] Simulated Gradle Android build');
+      return {
+        success: true,
+        platform: 'android',
+        artifactPath: path.join(cwd, 'android/app/build/outputs/apk/release/app-release.apk'),
+        buildId: 'gradle-build-simulated',
+      };
+    }
+
     const command = options.command || './gradlew assembleRelease';
     const parts = command.split(' ');
     const cmd = parts[0];
