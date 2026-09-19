@@ -5,7 +5,42 @@ Automated mobile preview pipeline CLI tool for Expo and React Native repositorie
 `mobile-preview` provides an automated pipeline that inspects incoming code changes in CI, distinguishes between JavaScript/asset modifications and native code changes, and publishes preview updates accordingly:
 
 - **JS/assets changes**: Publishes an Expo EAS Update to a preview channel.
-- **Native changes**: Builds a new Android APK (via Gradle or EAS Build) and publishes it as a latest preview release (e.g. GitHub Releases).
+- **Native changes**: Builds a new Android APK (via Gradle or EAS Build) and publishes it as a stable "latest preview" release (e.g. GitHub Releases).
+
+---
+
+## 🏗 High-Level Pipeline Architecture
+
+```text
+                    Git Repository
+                          │
+                          ▼
+                 GitHub Actions
+                          │
+                          ▼
+                mobile-preview CLI
+                          │
+             ┌────────────┴────────────┐
+             │                         │
+        JS/assets only            Native changes
+             │                         │
+             ▼                         ▼
+       EAS Update                  Native Build
+             │                         │
+             ▼                         ▼
+       Expo Update CDN            APK artifact
+             │                         │
+             │                    GitHub Release
+             │                         │
+             ▼                         ▼
+                    Developer Phone
+```
+
+### Core Design Principle
+
+`mobile-preview` treats the **native application binary as a relatively stable shell** and the **EAS Update as the rapidly changing application layer**.
+
+Only rebuild the native shell when necessary (native files, native package dependency changes, Expo native config modifications).
 
 ---
 
@@ -100,8 +135,36 @@ Example configuration:
 
 ---
 
-## 🔐 GitHub Action Secrets
+## 🏷 Optional UI Badge (`MobilePreviewBadge`)
 
-Ensure the following secrets are configured in your repository settings:
-- `EXPO_TOKEN`: Expo access token for EAS Update / EAS Build permissions.
-- `GITHUB_TOKEN`: Provided automatically by GitHub Actions (ensure `contents: write` permission).
+Applications can optionally render a developer preview badge:
+
+```tsx
+import { MobilePreviewBadge } from 'mobile-preview';
+
+export default function App() {
+  return (
+    <>
+      <MainApp />
+      {__DEV__ && <MobilePreviewBadge commitSha="82f91c" channel="preview" />}
+    </>
+  );
+}
+```
+
+---
+
+## 🔮 Future Architecture & Roadmap
+
+The architecture is designed to support the following future enhancements:
+
+1. **QR Code / Web Installation Landing Page**:
+   - Web page displaying latest preview metadata, QR code, and direct download links (`[Install Android Preview]`, `[Open EAS Preview]`).
+2. **Custom Preview Publishers**:
+   - Pluggable `HttpPublisher`, `S3Publisher`, `FirebasePublisher`, and custom private artifact hosting options.
+3. **Multiple Preview Environments**:
+   - Multi-tenant preview channels such as `preview/developer-a`, `preview/demo`, `preview/staging`.
+4. **Agent Feedback & Telemetry API**:
+   - Enable agents to query logs, capture application screenshots (`mobile-preview screenshot`), and inspect phone runtime state for closed-loop repairs.
+5. **Automated Device Farm Integration**:
+   - End-to-end loop: Agent code changes → build → physical/virtual device farm → visual UI evaluation via LLM → automated agent bug fix.
