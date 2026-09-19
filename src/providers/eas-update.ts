@@ -1,4 +1,4 @@
-import { execa } from 'execa';
+import { execEas } from '../utils/exec-eas.js';
 import type { UpdateProvider, UpdateOptions, UpdateResult } from './types.js';
 
 export class EasUpdateProvider implements UpdateProvider {
@@ -9,7 +9,7 @@ export class EasUpdateProvider implements UpdateProvider {
 
     try {
       const args = ['update', '--branch', branch, '--message', message, '--non-interactive'];
-      const { stdout } = await execa('eas', args, { cwd });
+      const { stdout } = await execEas(args, { cwd });
 
       return {
         success: true,

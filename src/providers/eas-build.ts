@@ -1,4 +1,4 @@
-import { execa } from 'execa';
+import { execEas } from '../utils/exec-eas.js';
 import type { BuildProvider, BuildOptions, BuildResult } from './types.js';
 
 export class EasBuildProvider implements BuildProvider {
@@ -16,7 +16,7 @@ export class EasBuildProvider implements BuildProvider {
         '--non-interactive',
       ];
 
-      const { stdout } = await execa('eas', args, { cwd });
+      const { stdout } = await execEas(args, { cwd });
 
       return {
         success: true,
