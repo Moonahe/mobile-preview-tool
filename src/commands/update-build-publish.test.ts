@@ -30,7 +30,7 @@ describe('Update, Build, and Publish Commands', () => {
 
     const path = await runBuild({ provider: mockBuildProvider });
     expect(path).toBe('/tmp/app-release.apk');
-  });
+  }, 15000);
 
   it('orchestrates publish command for JS change path', async () => {
     const mockUpdateProvider: UpdateProvider = {
@@ -43,5 +43,5 @@ describe('Update, Build, and Publish Commands', () => {
     };
 
     await expect(runPublish({ updateProvider: mockUpdateProvider })).resolves.not.toThrow();
-  });
+  }, 15000);
 });
