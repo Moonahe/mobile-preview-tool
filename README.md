@@ -1,177 +1,98 @@
 # mobile-preview
 
-Automated mobile preview pipeline tool for Expo and React Native applications.
+Automated mobile preview pipeline CLI tool for Expo and React Native repositories.
 
-`mobile-preview` automates preview deployments for React Native/Expo apps by detecting code changes between commits. It intelligently determines whether a change only affects JavaScript/assets (triggering a fast EAS Update) or native dependencies/files (triggering a native build and release).
+`mobile-preview` provides an automated pipeline that inspects incoming code changes in CI, distinguishes between JavaScript/asset modifications and native code changes, and publishes preview updates accordingly:
 
----
-
-## Key Features
-
-- **Automated Change Detection**: Automatically classifies changes between commits as `JavaScript`, `Native`, or `Configuration`.
-- **EAS Update Integration**: Instantly publishes Over-The-Air (OTA) updates when only JavaScript or bundle assets change.
-- **Native Build Pipeline**: Triggers native application builds (Gradle APK or EAS Build) and releases when native code or dependencies change.
-- **CI/CD Integration**: Generates GitHub Actions workflow configuration out of the box with `mobile-preview init`.
-- **Environment Diagnostics**: Built-in health check tool (`mobile-preview doctor`) to verify CLI tools, environment variables, and SDK setup.
-- **Rollback Support**: Quickly rollback a channel or preview release to a previous deployment.
+- **JS/assets changes**: Publishes an Expo EAS Update to a preview channel.
+- **Native changes**: Builds a new Android APK (via Gradle or EAS Build) and publishes it as a stable "latest preview" release (e.g. GitHub Releases).
 
 ---
 
-## Demo App
+## 🏗 High-Level Pipeline Architecture
 
-A pre-configured sample application is available in the [`demo/`](./demo) directory to showcase and test `mobile-preview` features.
-
-```bash
-# Navigate to demo app directory
-cd demo
-
-# Run environment health check
-npx mobile-preview doctor
-
-# Test change classification
-npx mobile-preview detect
+```text
+                    Git Repository
+                          │
+                          ▼
+                 GitHub Actions
+                          │
+                          ▼
+                mobile-preview CLI
+                          │
+             ┌────────────┴────────────┐
+             │                         │
+        JS/assets only            Native changes
+             │                         │
+             ▼                         ▼
+       EAS Update                  Native Build
+             │                         │
+             ▼                         ▼
+       Expo Update CDN            APK artifact
+             │                         │
+             │                    GitHub Release
+             │                         │
+             ▼                         ▼
+                    Developer Phone
 ```
 
-See [`demo/README.md`](./demo/README.md) for detailed instructions on testing OTA updates vs native builds with the demo app.
+### Core Design Principle
+
+`mobile-preview` treats the **native application binary as a relatively stable shell** and the **EAS Update as the rapidly changing application layer**.
+
+Only rebuild the native shell when necessary (native files, native package dependency changes, Expo native config modifications).
 
 ---
 
-## Installation
+## 🚀 Quick Start
 
-You can run `mobile-preview` using `npx` or install it locally in your project:
+Install `mobile-preview` in your Expo or React Native repository:
 
 ```bash
-# Run directly with npx
-npx mobile-preview <command>
-
-# Or install as a dev dependency
 npm install --save-dev mobile-preview
 ```
 
----
+Initialize configuration and GitHub Actions workflow:
 
-## Quick Start
+```bash
+npx mobile-preview init
+```
 
-1. Navigate to your Expo / React Native project root directory.
-2. Initialize the preview configuration and GitHub Actions workflow:
-
-   ```bash
-   npx mobile-preview init
-   ```
-
-   This command creates:
-   - `mobile-preview.config.json`: Configuration settings for the pipeline.
-   - `.github/workflows/mobile-preview.yml`: GitHub Actions workflow ready for PRs and push triggers.
-
-3. Configure GitHub Secrets:
-   Add the following secrets to your GitHub repository settings (`Settings > Secrets and variables > Actions`):
-   - `EXPO_TOKEN`: Access token from Expo (`expo.dev`) for EAS updates and builds.
-   - `GITHUB_TOKEN`: GitHub token with `contents: write` permissions (provided automatically by GitHub Actions).
-
-4. Check your environment setup:
-
-   ```bash
-   npx mobile-preview doctor
-   ```
-
-5. Run change detection or publish preview updates manually or in CI:
-
-   ```bash
-   # Detect change type
-   npx mobile-preview detect
-
-   # Publish update or build depending on detected changes
-   npx mobile-preview publish
-   ```
+This generates `mobile-preview.config.json` and `.github/workflows/mobile-preview.yml`.
 
 ---
 
-## CLI Commands
+## 🛠 Commands
 
 ### `mobile-preview init`
-Initializes mobile preview configuration and creates `.github/workflows/mobile-preview.yml`.
+Initializes configuration file and GitHub Actions CI workflow in the repository.
 
-```bash
-npx mobile-preview init [--yes]
-```
-- `--yes`: Skip interactive prompts and write default configuration.
-
----
-
-### `mobile-preview detect`
-Detects file and dependency changes between the current commit and a base commit.
-
-```bash
-npx mobile-preview detect [--json] [--base <baseRef>]
-```
-- `--json`: Output machine-readable JSON format.
-- `--base <baseRef>`: Specify custom Git base ref or branch to diff against (e.g., `main`, `origin/main`).
-
----
-
-### `mobile-preview publish`
-Orchestrates change detection and executes either a JavaScript update (EAS Update) or a native build + release artifact publication.
-
-```bash
-npx mobile-preview publish
-```
-
----
+### `mobile-preview detect [--json] [--base <ref>]`
+Inspects git diffs against base commit to classify changes into `javascript`, `native`, or `configuration`.
 
 ### `mobile-preview update`
-Publishes JS/assets update via Expo EAS Update to a target branch or channel.
+Publishes Expo EAS Update for JavaScript and asset changes.
 
-```bash
-npx mobile-preview update [--branch <branch>] [--channel <channel>] [--message <message>]
-```
-- `--branch <branch>`: Target EAS update branch (default: `preview`).
-- `--channel <channel>`: Target EAS update channel (default: `preview`).
-- `--message <message>`: Update description message.
+### `mobile-preview build [--platform <android|ios>]`
+Builds native application binary (Android APK) via configured provider (`gradle` or `eas`).
 
----
-
-### `mobile-preview build`
-Builds the native binary application (Android APK or iOS).
-
-```bash
-npx mobile-preview build [--platform <platform>]
-```
-- `--platform <platform>`: Target platform: `android` (default) or `ios`.
-
----
+### `mobile-preview publish`
+Orchestrates detection -> update (if JS) or build + release publish (if native change).
 
 ### `mobile-preview status`
-Displays status, channel details, and last deployed metadata for the mobile preview pipeline.
-
-```bash
-npx mobile-preview status
-```
-
----
+Displays status of current branch, commit SHA, preview channel, and last update metadata.
 
 ### `mobile-preview doctor`
-Runs environment checks for dependencies (Node.js, Git, EAS CLI, Android SDK, and authentication tokens).
+Checks CLI environment prerequisites (Node, Git, EAS CLI, Expo/GitHub authentication, Android SDK/Gradle).
 
-```bash
-npx mobile-preview doctor
-```
-
----
-
-### `mobile-preview rollback`
-Rolls back a target preview channel to a previous version or target commit.
-
-```bash
-npx mobile-preview rollback [--to <version>] [--channel <channel>]
-```
-- `--to <version>`: Version, commit SHA, or target to rollback to (default: `previous`).
-- `--channel <channel>`: EAS channel to perform rollback on (default: `preview`).
+### `mobile-preview rollback [--to <version>]`
+Rolls back preview channel updates or release tags.
 
 ---
 
-## Configuration (`mobile-preview.config.json`)
+## ⚙️ Configuration (`mobile-preview.config.json`)
 
-When you run `mobile-preview init`, a `mobile-preview.config.json` file is generated in your project root:
+Example configuration:
 
 ```json
 {
@@ -212,51 +133,38 @@ When you run `mobile-preview init`, a `mobile-preview.config.json` file is gener
 }
 ```
 
-### Configuration Schema Options
-
-- **`provider`**: App framework provider (default: `"expo"`).
-- **`appDirectory`**: Root directory of the mobile project (default: `"."`).
-- **`preview.channel`**: EAS update target channel (default: `"preview"`).
-- **`preview.branch`**: EAS update target branch (default: `"preview"`).
-- **`preview.platforms`**: Supported platforms (`["android", "ios"]`).
-- **`nativeBuild.provider`**: Build provider for native apps (`"gradle"` or `"eas"`, default: `"gradle"`).
-- **`nativeBuild.android.enabled`**: Enable Android native builds (default: `true`).
-- **`nativeBuild.android.artifact`**: Artifact format (`"apk"`).
-- **`nativeBuild.ios.enabled`**: Enable iOS native builds (default: `false`).
-- **`publish.provider`**: Strategy for publishing native build artifacts (`"github-release"`, `"http"`, `"s3"`, `"custom"`).
-- **`publish.releaseTag`**: Release tag name on GitHub Releases (default: `"mobile-preview"`).
-- **`detection.nativePaths`**: Glob patterns that trigger native builds when modified.
-- **`detection.nativeDependencies`**: Automatically detect native package dependency changes in `package.json` (default: `true`).
-- **`detection.nativePackages`**: Explicit list of package names that should trigger native builds on version change.
-
 ---
 
-## Environment Variables & Secrets
+## 🏷 Optional UI Badge (`MobilePreviewBadge`)
 
-- **`EXPO_TOKEN`**: Expo access token required for publishing EAS updates and EAS builds.
-- **`GITHUB_TOKEN`**: Required for creating GitHub Releases and uploading build artifacts in CI.
+Applications can optionally render a developer preview badge:
 
----
+```tsx
+import { MobilePreviewBadge } from 'mobile-preview';
 
-## TypeScript / Programmatic API
-
-`mobile-preview` can also be imported as a Node.js library in TypeScript or JavaScript scripts:
-
-```typescript
-import { detectChanges, loadConfig, saveConfig } from 'mobile-preview';
-
-// Load configuration
-const config = loadConfig(process.cwd());
-
-// Detect changes programmatically
-const result = await detectChanges(config, process.cwd());
-
-console.log('Change classification:', result.classification);
-console.log('Native change required:', result.nativeChange);
+export default function App() {
+  return (
+    <>
+      <MainApp />
+      {__DEV__ && <MobilePreviewBadge commitSha="82f91c" channel="preview" />}
+    </>
+  );
+}
 ```
 
 ---
 
-## License
+## 🔮 Future Architecture & Roadmap
 
-[MIT](LICENSE)
+The architecture is designed to support the following future enhancements:
+
+1. **QR Code / Web Installation Landing Page**:
+   - Web page displaying latest preview metadata, QR code, and direct download links (`[Install Android Preview]`, `[Open EAS Preview]`).
+2. **Custom Preview Publishers**:
+   - Pluggable `HttpPublisher`, `S3Publisher`, `FirebasePublisher`, and custom private artifact hosting options.
+3. **Multiple Preview Environments**:
+   - Multi-tenant preview channels such as `preview/developer-a`, `preview/demo`, `preview/staging`.
+4. **Agent Feedback & Telemetry API**:
+   - Enable agents to query logs, capture application screenshots (`mobile-preview screenshot`), and inspect phone runtime state for closed-loop repairs.
+5. **Automated Device Farm Integration**:
+   - End-to-end loop: Agent code changes → build → physical/virtual device farm → visual UI evaluation via LLM → automated agent bug fix.
