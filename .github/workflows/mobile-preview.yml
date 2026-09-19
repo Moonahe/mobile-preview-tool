@@ -26,8 +26,12 @@ jobs:
         with:
           node-version: 22
 
-      - name: Install Project Dependencies
+      - name: Install Root Dependencies
         run: npm ci
+
+      - name: Install Demo Dependencies
+        run: npm install
+        working-directory: demo
 
       - name: Install EAS CLI Globally
         run: npm install -g eas-cli
@@ -44,7 +48,7 @@ jobs:
         working-directory: demo
 
       - name: Mobile Preview Publish on Demo App (Live)
-        if: ${{ env.EXPO_TOKEN != '' }}
+        if: ${{ secrets.EXPO_TOKEN != '' }}
         run: node ../dist/cli.js publish
         working-directory: demo
         env:
@@ -52,9 +56,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Mobile Preview Publish on Demo App (Dry Run)
-        if: ${{ env.EXPO_TOKEN == '' }}
+        if: ${{ secrets.EXPO_TOKEN == '' }}
         run: node ../dist/cli.js publish --dry-run
         working-directory: demo
         env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
