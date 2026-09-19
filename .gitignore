@@ -3,3 +3,9 @@ dist
 .tsup
 coverage
 *.log
+
+# Demo build artifacts & node_modules
+demo/node_modules/
+demo/.expo/
+demo/android/
+demo/ios/
