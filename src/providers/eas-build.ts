@@ -33,10 +33,19 @@ export class EasBuildProvider implements BuildProvider {
         buildId: 'eas-build-triggered',
       };
     } catch (err: any) {
+      const errorMsg = err.message || String(err);
+      if (errorMsg.includes('Generating a new Keystore is not supported in --non-interactive mode')) {
+        return {
+          success: false,
+          platform,
+          error: `EAS Android credentials/keystore missing on Expo Cloud. Please run 'eas build --platform android' once interactively from your terminal or run 'eas credentials' to set up keystore credentials.`,
+        };
+      }
+
       return {
         success: false,
         platform,
-        error: err.message || String(err),
+        error: errorMsg,
       };
     }
   }

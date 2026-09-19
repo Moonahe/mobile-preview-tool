@@ -48,3 +48,14 @@ You can run this demo application using standard Expo CLI commands:
 npm install
 npm start
 ```
+
+### 5. Initial EAS Credentials Setup (One-time Manual Step)
+
+When running native builds with EAS Build (`"nativeBuild.provider": "eas"`), Expo Cloud requires an initial Android Keystore to be generated interactively.
+
+Run the build once interactively from your local terminal to set up credentials:
+
+```bash
+cd demo
+eas build --platform android
+```
