@@ -4,6 +4,7 @@ export interface UpdateOptions {
   channel?: string;
   message?: string;
   commitSha?: string;
+  dryRun?: boolean;
 }
 
 export interface UpdateResult {
@@ -24,6 +25,7 @@ export interface BuildOptions {
   platform: 'android' | 'ios';
   artifactType?: string;
   command?: string;
+  dryRun?: boolean;
 }
 
 export interface BuildResult {
@@ -44,6 +46,7 @@ export interface ArtifactOptions {
   releaseTag: string;
   repository?: string;
   metadata?: Record<string, unknown>;
+  dryRun?: boolean;
 }
 
 export interface ArtifactResult {

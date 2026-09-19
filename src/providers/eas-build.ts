@@ -6,6 +6,15 @@ export class EasBuildProvider implements BuildProvider {
     const cwd = options.cwd || process.cwd();
     const platform = options.platform;
 
+    if (options.dryRun) {
+      console.log(`[Dry Run] Simulated EAS build for platform '${platform}'`);
+      return {
+        success: true,
+        platform,
+        buildId: 'eas-build-simulated',
+      };
+    }
+
     try {
       const args = [
         'build',

@@ -43,7 +43,7 @@ jobs:
         run: node ../dist/cli.js detect --json
         working-directory: demo
 
-      - name: Mobile Preview Publish on Demo App
+      - name: Mobile Preview Publish on Demo App (Live)
         if: ${{ env.EXPO_TOKEN != '' }}
         run: node ../dist/cli.js publish
         working-directory: demo
@@ -51,8 +51,10 @@ jobs:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Notice when EXPO_TOKEN is not configured
+      - name: Mobile Preview Publish on Demo App (Dry Run)
         if: ${{ env.EXPO_TOKEN == '' }}
-        run: echo "EXPO_TOKEN secret is not set in repository secrets. Detection completed successfully. Add EXPO_TOKEN to enable automated EAS publishing."
+        run: node ../dist/cli.js publish --dry-run
+        working-directory: demo
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

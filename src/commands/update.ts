@@ -10,6 +10,7 @@ export interface UpdateCommandOptions {
   channel?: string;
   message?: string;
   provider?: UpdateProvider;
+  dryRun?: boolean;
 }
 
 export async function runUpdate(options: UpdateCommandOptions = {}): Promise<void> {
@@ -26,7 +27,12 @@ export async function runUpdate(options: UpdateCommandOptions = {}): Promise<voi
   console.log('Classification: JavaScript');
   console.log(`Commit:         ${commitSha}`);
   console.log(`Branch:         ${currentBranch}`);
-  console.log(`Target Channel: ${channel}\n`);
+  console.log(`Target Channel: ${channel}`);
+  if (options.dryRun) {
+    console.log(pc.yellow('Mode:           Dry Run\n'));
+  } else {
+    console.log('');
+  }
   console.log('Publishing EAS Update...\n');
 
   const provider = options.provider || new EasUpdateProvider();
@@ -36,6 +42,7 @@ export async function runUpdate(options: UpdateCommandOptions = {}): Promise<voi
     channel,
     message: options.message || `Preview update for commit ${commitSha}`,
     commitSha,
+    dryRun: options.dryRun,
   });
 
   if (result.success) {

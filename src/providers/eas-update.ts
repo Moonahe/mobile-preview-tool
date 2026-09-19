@@ -7,6 +7,16 @@ export class EasUpdateProvider implements UpdateProvider {
     const branch = options.branch || 'preview';
     const message = options.message || `Update for commit ${options.commitSha || 'HEAD'}`;
 
+    if (options.dryRun) {
+      console.log(`[Dry Run] Simulated EAS update publish for branch '${branch}'`);
+      return {
+        success: true,
+        channel: options.channel || branch,
+        branch,
+        message: '[Dry Run] EAS update simulated successfully',
+      };
+    }
+
     try {
       const args = ['update', '--branch', branch, '--message', message, '--non-interactive'];
       const { stdout } = await execEas(args, { cwd });
