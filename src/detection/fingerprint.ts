@@ -2,6 +2,7 @@ import { createFingerprintAsync } from '@expo/fingerprint';
 import fs from 'node:fs';
 import path from 'node:path';
 import { execa } from 'execa';
+import { execEas } from '../utils/exec-eas.js';
 
 export const FINGERPRINT_FILE_NAME = 'fingerprint';
 export const FINGERPRINT_DIR = '.mobile-preview';
@@ -14,13 +15,6 @@ export async function generateFingerprint(cwd: string = process.cwd()): Promise<
     }
     return null;
   } catch {
-    try {
-      const { stdout } = await execa('npx', ['@expo/fingerprint', '.'], { cwd, preferLocal: true });
-      const parsed = JSON.parse(stdout);
-      if (parsed && typeof parsed.hash === 'string') {
-        return parsed.hash;
-      }
-    } catch {}
     return null;
   }
 }
@@ -104,16 +98,21 @@ export async function readStoredFingerprint(
   } catch {}
 
   // 4. EAS Service metadata
-  try {
-    const { stdout } = await execa('npx', ['eas-cli', 'build:list', '--limit=1', '--json', '--non-interactive'], { cwd });
-    const builds = JSON.parse(stdout);
-    if (Array.isArray(builds) && builds.length > 0) {
-      const latestBuild = builds[0];
-      if (latestBuild?.fingerprint) {
-        return latestBuild.fingerprint;
+  if (process.env.EXPO_TOKEN) {
+    try {
+      const { stdout } = await execEas(['build:list', '--limit=1', '--json', '--non-interactive'], {
+        cwd,
+        timeout: 2000,
+      });
+      const builds = JSON.parse(stdout);
+      if (Array.isArray(builds) && builds.length > 0) {
+        const latestBuild = builds[0];
+        if (latestBuild?.fingerprint) {
+          return latestBuild.fingerprint;
+        }
       }
-    }
-  } catch {}
+    } catch {}
+  }
 
   return null;
 }
