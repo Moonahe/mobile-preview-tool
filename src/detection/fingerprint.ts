@@ -1,4 +1,4 @@
-import { createFingerprintAsync } from '@expo/fingerprint';
+import { createFingerprintAsync, type Platform } from '@expo/fingerprint';
 import fs from 'node:fs';
 import path from 'node:path';
 import { execa } from 'execa';
@@ -7,9 +7,12 @@ import { execEas } from '../utils/exec-eas.js';
 export const FINGERPRINT_FILE_NAME = 'fingerprint';
 export const FINGERPRINT_DIR = '.mobile-preview';
 
-export async function generateFingerprint(cwd: string = process.cwd()): Promise<string | null> {
+export async function generateFingerprint(
+  cwd: string = process.cwd(),
+  platforms: Platform[] = ['android', 'ios']
+): Promise<string | null> {
   try {
-    const fingerprintPromise = createFingerprintAsync(cwd);
+    const fingerprintPromise = createFingerprintAsync(cwd, { platforms });
     const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 10000));
     const result = await Promise.race([fingerprintPromise, timeoutPromise]);
     if (result && typeof result === 'object' && typeof (result as any).hash === 'string') {

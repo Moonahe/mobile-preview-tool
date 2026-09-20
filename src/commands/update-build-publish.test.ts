@@ -44,4 +44,29 @@ describe('Update, Build, and Publish Commands', () => {
 
     await expect(runPublish({ updateProvider: mockUpdateProvider, base: 'HEAD' })).resolves.not.toThrow();
   }, 30000);
+
+  it('orchestrates publish command for native build path when fingerprint changes', async () => {
+    const mockBuildProvider: BuildProvider = {
+      build: vi.fn().mockResolvedValue({
+        success: true,
+        platform: 'android',
+        artifactPath: '/tmp/app-release.apk',
+      }),
+    };
+
+    const originalFp = process.env.MOBILE_PREVIEW_FINGERPRINT;
+    process.env.MOBILE_PREVIEW_FINGERPRINT = 'old-mismatched-hash-12345';
+
+    try {
+      await expect(
+        runPublish({ buildProvider: mockBuildProvider, dryRun: true })
+      ).resolves.not.toThrow();
+    } finally {
+      if (originalFp !== undefined) {
+        process.env.MOBILE_PREVIEW_FINGERPRINT = originalFp;
+      } else {
+        delete process.env.MOBILE_PREVIEW_FINGERPRINT;
+      }
+    }
+  }, 30000);
 });

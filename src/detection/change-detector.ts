@@ -24,17 +24,31 @@ export async function detectChanges(
   const baseRef = overrideBaseRef || (await getBaseCommit(cwd));
   const changedFiles = await getChangedFiles(cwd, baseRef);
 
-  // Check EAS Fingerprint if enabled
+  // Check EAS Fingerprint as primary change detection mechanism
   if (config.detection.useFingerprint !== false) {
-    const currentFingerprint = await generateFingerprint(cwd);
+    const currentFingerprint = await generateFingerprint(cwd, config.preview?.platforms);
     if (currentFingerprint) {
       const storedFingerprint = await readStoredFingerprint(cwd, config.publish?.releaseTag);
-      if (storedFingerprint && currentFingerprint !== storedFingerprint) {
+      if (!storedFingerprint) {
+        return {
+          classification: 'native',
+          nativeChange: true,
+          files: changedFiles,
+          reason: `Initial native build required (no recorded EAS fingerprint found, current hash: ${currentFingerprint.slice(0, 8)})`,
+        };
+      } else if (currentFingerprint !== storedFingerprint) {
         return {
           classification: 'native',
           nativeChange: true,
           files: changedFiles,
           reason: `EAS native fingerprint changed (${storedFingerprint.slice(0, 8)} -> ${currentFingerprint.slice(0, 8)})`,
+        };
+      } else {
+        return {
+          classification: 'javascript',
+          nativeChange: false,
+          files: changedFiles,
+          reason: `EAS native fingerprint unchanged (${currentFingerprint.slice(0, 8)}). JS/OTA update applicable.`,
         };
       }
     }
