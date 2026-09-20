@@ -43,6 +43,13 @@ jobs:
       - name: Build Mobile Preview Tool
         run: npm run build
 
+      - name: Restore Mobile Preview Fingerprint Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: mobile-preview-demo-fingerprint
+          path: demo/.mobile-preview
+        continue-on-error: true
+
       - name: Run Mobile Preview Doctor on Demo App
         run: node ../dist/cli.js doctor
         working-directory: demo
@@ -60,3 +67,11 @@ jobs:
         if: ${{ env.EXPO_TOKEN == '' }}
         run: node ../dist/cli.js publish --dry-run
         working-directory: demo
+
+      - name: Save Mobile Preview Fingerprint Artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mobile-preview-demo-fingerprint
+          path: demo/.mobile-preview/
+          if-no-files-found: ignore

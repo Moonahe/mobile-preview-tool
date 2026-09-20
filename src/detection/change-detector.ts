@@ -28,15 +28,8 @@ export async function detectChanges(
   if (config.detection.useFingerprint !== false) {
     const currentFingerprint = await generateFingerprint(cwd);
     if (currentFingerprint) {
-      const storedFingerprint = readStoredFingerprint(cwd);
-      if (!storedFingerprint) {
-        return {
-          classification: 'native',
-          nativeChange: true,
-          files: changedFiles,
-          reason: `Initial native build required (no recorded EAS fingerprint found, generated: ${currentFingerprint.slice(0, 8)})`,
-        };
-      } else if (currentFingerprint !== storedFingerprint) {
+      const storedFingerprint = await readStoredFingerprint(cwd, config.publish?.releaseTag);
+      if (storedFingerprint && currentFingerprint !== storedFingerprint) {
         return {
           classification: 'native',
           nativeChange: true,

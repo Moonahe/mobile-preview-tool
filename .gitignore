@@ -4,8 +4,13 @@ dist
 coverage
 *.log
 
+.mobile-preview/
+.mobile-preview-fingerprint
+
 # Demo build artifacts & node_modules
 demo/node_modules/
 demo/.expo/
+demo/.mobile-preview/
+demo/.mobile-preview-fingerprint
 demo/android/
 demo/ios/

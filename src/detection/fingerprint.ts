@@ -1,39 +1,128 @@
-import { execa } from 'execa';
+import { createFingerprintAsync } from '@expo/fingerprint';
 import fs from 'node:fs';
 import path from 'node:path';
+import { execa } from 'execa';
 
-export const FINGERPRINT_FILE_NAME = '.mobile-preview-fingerprint';
+export const FINGERPRINT_FILE_NAME = 'fingerprint';
+export const FINGERPRINT_DIR = '.mobile-preview';
 
 export async function generateFingerprint(cwd: string = process.cwd()): Promise<string | null> {
   try {
-    const { stdout } = await execa('npx', ['--yes', '@expo/fingerprint', '.'], {
-      cwd,
-      preferLocal: true,
-    });
-
-    const parsed = JSON.parse(stdout);
-    if (parsed && typeof parsed.hash === 'string') {
-      return parsed.hash;
+    const result = await createFingerprintAsync(cwd);
+    if (result && typeof result.hash === 'string') {
+      return result.hash;
     }
     return null;
   } catch {
+    try {
+      const { stdout } = await execa('npx', ['@expo/fingerprint', '.'], { cwd, preferLocal: true });
+      const parsed = JSON.parse(stdout);
+      if (parsed && typeof parsed.hash === 'string') {
+        return parsed.hash;
+      }
+    } catch {}
     return null;
   }
 }
 
-export function readStoredFingerprint(cwd: string = process.cwd()): string | null {
-  const filePath = path.join(cwd, FINGERPRINT_FILE_NAME);
-  if (fs.existsSync(filePath)) {
-    try {
-      return fs.readFileSync(filePath, 'utf-8').trim();
-    } catch {
-      return null;
+async function getRepoSlug(cwd: string): Promise<string | null> {
+  if (process.env.GITHUB_REPOSITORY) {
+    return process.env.GITHUB_REPOSITORY;
+  }
+  try {
+    const { stdout } = await execa('git', ['config', '--get', 'remote.origin.url'], { cwd });
+    const match = stdout.match(/github\.com[:/]([^/]+\/[^/.]+)/);
+    if (match && match[1]) {
+      return match[1].replace(/\.git$/, '');
+    }
+  } catch {}
+  return null;
+}
+
+export async function readStoredFingerprint(
+  cwd: string = process.cwd(),
+  releaseTag: string = 'mobile-preview'
+): Promise<string | null> {
+  // 1. Environment variable override
+  if (process.env.MOBILE_PREVIEW_FINGERPRINT?.trim()) {
+    return process.env.MOBILE_PREVIEW_FINGERPRINT.trim();
+  }
+
+  // 2. Check local action artifact / cache files
+  const localPaths = [
+    path.join(cwd, FINGERPRINT_DIR, FINGERPRINT_FILE_NAME),
+    path.join(cwd, FINGERPRINT_DIR, 'preview.json'),
+    path.join(cwd, '.mobile-preview-fingerprint'), // legacy path fallback
+  ];
+
+  for (const filePath of localPaths) {
+    if (fs.existsSync(filePath)) {
+      try {
+        const content = fs.readFileSync(filePath, 'utf-8').trim();
+        if (filePath.endsWith('.json')) {
+          const parsed = JSON.parse(content);
+          if (parsed?.fingerprint) return parsed.fingerprint;
+        } else if (content) {
+          return content;
+        }
+      } catch {}
     }
   }
+
+  // 3. GitHub Action Artifacts or GitHub Release metadata (preview.json)
+  try {
+    const repoSlug = await getRepoSlug(cwd);
+    if (repoSlug) {
+      const headers: Record<string, string> = {
+        'User-Agent': 'mobile-preview-cli',
+      };
+      if (process.env.GITHUB_TOKEN) {
+        headers['Authorization'] = `token ${process.env.GITHUB_TOKEN}`;
+      }
+
+      const res = await fetch(`https://api.github.com/repos/${repoSlug}/releases/tags/${releaseTag}`, {
+        headers,
+        signal: AbortSignal.timeout(2000),
+      });
+      if (res.ok) {
+        const data: any = await res.json();
+        const previewAsset = data.assets?.find((a: any) => a.name === 'preview.json');
+        if (previewAsset?.browser_download_url) {
+          const metaRes = await fetch(previewAsset.browser_download_url, {
+            headers,
+            signal: AbortSignal.timeout(2000),
+          });
+          if (metaRes.ok) {
+            const metaJson: any = await metaRes.json();
+            if (metaJson?.fingerprint) {
+              return metaJson.fingerprint;
+            }
+          }
+        }
+      }
+    }
+  } catch {}
+
+  // 4. EAS Service metadata
+  try {
+    const { stdout } = await execa('npx', ['eas-cli', 'build:list', '--limit=1', '--json', '--non-interactive'], { cwd });
+    const builds = JSON.parse(stdout);
+    if (Array.isArray(builds) && builds.length > 0) {
+      const latestBuild = builds[0];
+      if (latestBuild?.fingerprint) {
+        return latestBuild.fingerprint;
+      }
+    }
+  } catch {}
+
   return null;
 }
 
 export function saveStoredFingerprint(cwd: string = process.cwd(), hash: string): void {
-  const filePath = path.join(cwd, FINGERPRINT_FILE_NAME);
+  const dirPath = path.join(cwd, FINGERPRINT_DIR);
+  if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, { recursive: true });
+  }
+  const filePath = path.join(dirPath, FINGERPRINT_FILE_NAME);
   fs.writeFileSync(filePath, hash.trim() + '\n', 'utf-8');
 }

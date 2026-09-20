@@ -28,6 +28,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@expo/fingerprint": "^0.20.13",
     "commander": "^12.1.0",
     "execa": "^8.0.1",
     "minimatch": "^9.0.5",

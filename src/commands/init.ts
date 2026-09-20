@@ -39,6 +39,13 @@ jobs:
 
       - run: npm ci
 
+      - name: Restore Mobile Preview Fingerprint Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: mobile-preview-fingerprint
+          path: .mobile-preview
+        continue-on-error: true
+
       - name: Run Mobile Preview Detection
         run: npx mobile-preview detect --json
 
@@ -47,6 +54,14 @@ jobs:
         env:
           EXPO_TOKEN: \${{ secrets.EXPO_TOKEN }}
           GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
+
+      - name: Save Mobile Preview Fingerprint Artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mobile-preview-fingerprint
+          path: .mobile-preview/
+          if-no-files-found: ignore
 `;
 }
 

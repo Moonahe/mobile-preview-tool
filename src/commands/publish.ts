@@ -6,6 +6,7 @@ import { runUpdate } from './update.js';
 import { runBuild } from './build.js';
 import { GitHubReleasePublisher } from '../providers/github-release.js';
 import { getCurrentCommitSha, getCurrentBranch } from '../git/git.js';
+import { generateFingerprint } from '../detection/fingerprint.js';
 import type { ArtifactPublisher, BuildProvider, UpdateProvider } from '../providers/types.js';
 
 export interface PublishCommandOptions {
@@ -52,6 +53,8 @@ export async function runPublish(options: PublishCommandOptions = {}): Promise<v
     return;
   }
 
+  const fingerprintHash = (await generateFingerprint(cwd)) || undefined;
+
   // Create preview metadata
   const metadata = {
     commit: commitSha,
@@ -60,6 +63,7 @@ export async function runPublish(options: PublishCommandOptions = {}): Promise<v
     classification: detection.classification,
     platform: 'android',
     artifact: 'app-preview.apk',
+    fingerprint: fingerprintHash,
   };
 
   const publisher = options.publisher || new GitHubReleasePublisher();
