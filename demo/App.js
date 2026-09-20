@@ -1,9 +1,64 @@
-import React, { useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, SafeAreaView, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 
 export default function App() {
   const [counter, setCounter] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [statusMessage, setStatusMessage] = useState(null);
+  const [previewMeta, setPreviewMeta] = useState({
+    channel: 'preview',
+    updateId: 'embedded',
+    runtimeVersion: '1.0.0',
+  });
+
+  useEffect(() => {
+    async function loadMeta() {
+      try {
+        const Updates = await import('expo-updates');
+        setPreviewMeta({
+          channel: Updates.channel || 'preview',
+          updateId: Updates.updateId ? Updates.updateId.slice(0, 8) : 'embedded',
+          runtimeVersion: Updates.runtimeVersion || '1.0.0',
+        });
+      } catch {
+        setPreviewMeta({
+          channel: 'preview',
+          updateId: 'dev-build',
+          runtimeVersion: '1.0.0',
+        });
+      }
+    }
+    loadMeta();
+  }, []);
+
+  const handleForceRefresh = async () => {
+    setLoading(true);
+    setStatusMessage('Checking EAS for OTA updates...');
+    try {
+      const Updates = await import('expo-updates');
+      const checkResult = await Updates.checkForUpdateAsync();
+      if (checkResult.isAvailable) {
+        setStatusMessage('New OTA update found! Downloading...');
+        await Updates.fetchUpdateAsync();
+        setStatusMessage('Reloading application...');
+        await Updates.reloadAsync();
+      } else {
+        setStatusMessage('App is up to date! No new OTA update found.');
+        setTimeout(() => setStatusMessage(null), 3000);
+      }
+    } catch (err) {
+      const msg = err?.message || String(err);
+      if (msg.includes('development') || msg.includes('Expo Go')) {
+        setStatusMessage('OTA force refresh is active in release/preview builds.');
+      } else {
+        setStatusMessage(`Update error: ${msg}`);
+      }
+      setTimeout(() => setStatusMessage(null), 4000);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -14,6 +69,38 @@ export default function App() {
           <Text style={styles.subtitle}>
             Showcasing Automated Change Detection & Preview Pipeline
           </Text>
+        </View>
+
+        <View style={styles.previewCard}>
+          <Text style={styles.previewCardTitle}>🔍 Active Mobile Preview Info</Text>
+          <View style={styles.metaRow}>
+            <Text style={styles.metaLabel}>Channel:</Text>
+            <Text style={styles.metaVal}>{previewMeta.channel}</Text>
+          </View>
+          <View style={styles.metaRow}>
+            <Text style={styles.metaLabel}>Update ID:</Text>
+            <Text style={styles.metaVal}>{previewMeta.updateId}</Text>
+          </View>
+          <View style={styles.metaRow}>
+            <Text style={styles.metaLabel}>Runtime Version:</Text>
+            <Text style={styles.metaVal}>{previewMeta.runtimeVersion}</Text>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.refreshButton, loading && styles.buttonDisabled]}
+            onPress={handleForceRefresh}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color="#ffffff" />
+            ) : (
+              <Text style={styles.refreshButtonText}>🔄 Force Check & Reload OTA Update</Text>
+            )}
+          </TouchableOpacity>
+
+          {statusMessage ? (
+            <Text style={styles.statusMessage}>{statusMessage}</Text>
+          ) : null}
         </View>
 
         <View style={styles.card}>
@@ -33,7 +120,7 @@ export default function App() {
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>🧪 Interactive Demo Component 2</Text>
+          <Text style={styles.cardTitle}>🧪 Interactive Demo Component Changed</Text>
           <Text style={styles.bodyText}>
             Try editing this file (<Text style={styles.code}>demo/App.js</Text>) and running <Text style={styles.code}>npx mobile-preview detect</Text>!
           </Text>
@@ -96,6 +183,56 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
+  },
+  previewCard: {
+    backgroundColor: '#0f172a',
+    borderRadius: 12,
+    padding: 18,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#1e293b',
+  },
+  previewCardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#38bdf8',
+    marginBottom: 12,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  metaLabel: {
+    color: '#94a3b8',
+    fontSize: 13,
+  },
+  metaVal: {
+    color: '#f8fafc',
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  refreshButton: {
+    backgroundColor: '#2563eb',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  buttonDisabled: {
+    backgroundColor: '#475569',
+  },
+  refreshButtonText: {
+    color: '#ffffff',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  statusMessage: {
+    color: '#f59e0b',
+    fontSize: 12,
+    marginTop: 10,
+    textAlign: 'center',
   },
   cardTitle: {
     fontSize: 18,

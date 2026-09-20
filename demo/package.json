@@ -15,6 +15,7 @@
   "dependencies": {
     "expo": "~51.0.0",
     "expo-status-bar": "~1.12.1",
+    "expo-updates": "~0.25.27",
     "react": "18.2.0",
     "react-native": "0.74.5",
     "expo-camera": "~15.0.16"
