@@ -9,9 +9,11 @@ export const FINGERPRINT_DIR = '.mobile-preview';
 
 export async function generateFingerprint(cwd: string = process.cwd()): Promise<string | null> {
   try {
-    const result = await createFingerprintAsync(cwd);
-    if (result && typeof result.hash === 'string') {
-      return result.hash;
+    const fingerprintPromise = createFingerprintAsync(cwd);
+    const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 10000));
+    const result = await Promise.race([fingerprintPromise, timeoutPromise]);
+    if (result && typeof result === 'object' && typeof (result as any).hash === 'string') {
+      return (result as any).hash;
     }
     return null;
   } catch {

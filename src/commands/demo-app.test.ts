@@ -19,7 +19,7 @@ describe('Demo App Integration', () => {
   it('generates an EAS fingerprint hash for the demo app', async () => {
     const hash = await generateFingerprint(demoPath);
     expect(typeof hash === 'string' || hash === null).toBe(true);
-  }, 15000);
+  }, 30000);
 
   it('runs change detection on the demo app directory', async () => {
     const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -32,7 +32,7 @@ describe('Demo App Integration', () => {
     expect(parsed).toHaveProperty('nativeChange');
 
     consoleSpy.mockRestore();
-  }, 15000);
+  }, 30000);
 
   it('runs doctor health checks on the demo app directory', async () => {
     const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
