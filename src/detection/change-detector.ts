@@ -4,7 +4,7 @@ import {
   detectPackageJsonNativeChanges,
   detectExpoConfigNativeChanges,
 } from './native-detector.js';
-import { generateFingerprint, readStoredFingerprint } from './fingerprint.js';
+import { generateFingerprint, readStoredFingerprint, saveStoredFingerprint } from './fingerprint.js';
 import type { MobilePreviewConfig } from '../config/schema.js';
 
 export type DetectionClassification = 'javascript' | 'native' | 'configuration' | 'unknown';
@@ -28,22 +28,20 @@ export async function detectChanges(
   if (config.detection.useFingerprint !== false) {
     const currentFingerprint = await generateFingerprint(cwd, config.preview?.platforms);
     if (currentFingerprint) {
+      // 1. Read stored fingerprint FIRST before saving current fingerprint to local cache
       const storedFingerprint = await readStoredFingerprint(cwd, config.publish?.releaseTag);
-      if (!storedFingerprint) {
-        return {
-          classification: 'native',
-          nativeChange: true,
-          files: changedFiles,
-          reason: `Initial native build required (no recorded EAS fingerprint found, current hash: ${currentFingerprint.slice(0, 8)})`,
-        };
-      } else if (currentFingerprint !== storedFingerprint) {
+
+      // 2. Save current fingerprint for artifact upload and future process steps
+      saveStoredFingerprint(cwd, currentFingerprint);
+
+      if (storedFingerprint && currentFingerprint !== storedFingerprint) {
         return {
           classification: 'native',
           nativeChange: true,
           files: changedFiles,
           reason: `EAS native fingerprint changed (${storedFingerprint.slice(0, 8)} -> ${currentFingerprint.slice(0, 8)})`,
         };
-      } else {
+      } else if (storedFingerprint && currentFingerprint === storedFingerprint) {
         return {
           classification: 'javascript',
           nativeChange: false,
