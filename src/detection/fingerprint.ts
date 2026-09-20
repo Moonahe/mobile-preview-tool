@@ -47,10 +47,13 @@ export async function readStoredFingerprint(
     return process.env.MOBILE_PREVIEW_FINGERPRINT.trim();
   }
 
-  // 2. Check local action artifact / cache files
+  // 2. Check local action artifact / cache files in cwd and sub/parent directories
   const localPaths = [
     path.join(cwd, FINGERPRINT_DIR, FINGERPRINT_FILE_NAME),
     path.join(cwd, FINGERPRINT_DIR, 'preview.json'),
+    path.join(cwd, 'demo', FINGERPRINT_DIR, FINGERPRINT_FILE_NAME),
+    path.join(cwd, 'demo', FINGERPRINT_DIR, 'preview.json'),
+    path.join(cwd, '..', FINGERPRINT_DIR, FINGERPRINT_FILE_NAME),
     path.join(cwd, '.mobile-preview-fingerprint'), // legacy path fallback
   ];
 
@@ -81,15 +84,19 @@ export async function readStoredFingerprint(
 
       const res = await fetch(`https://api.github.com/repos/${repoSlug}/releases/tags/${releaseTag}`, {
         headers,
-        signal: AbortSignal.timeout(2000),
+        signal: AbortSignal.timeout(2500),
       });
       if (res.ok) {
         const data: any = await res.json();
         const previewAsset = data.assets?.find((a: any) => a.name === 'preview.json');
-        if (previewAsset?.browser_download_url) {
-          const metaRes = await fetch(previewAsset.browser_download_url, {
-            headers,
-            signal: AbortSignal.timeout(2000),
+        if (previewAsset?.id) {
+          const assetHeaders = {
+            ...headers,
+            'Accept': 'application/octet-stream',
+          };
+          const metaRes = await fetch(`https://api.github.com/repos/${repoSlug}/releases/assets/${previewAsset.id}`, {
+            headers: assetHeaders,
+            signal: AbortSignal.timeout(2500),
           });
           if (metaRes.ok) {
             const metaJson: any = await metaRes.json();
@@ -105,15 +112,33 @@ export async function readStoredFingerprint(
   // 4. EAS Service metadata
   if (process.env.EXPO_TOKEN) {
     try {
-      const { stdout } = await execEas(['build:list', '--limit=1', '--json', '--non-interactive'], {
-        cwd,
-        timeout: 2000,
-      });
+      const { stdout } = await execEas(
+        ['build:list', '--status', 'finished', '--limit=5', '--json', '--non-interactive'],
+        { cwd, timeout: 3000 }
+      );
       const builds = JSON.parse(stdout);
-      if (Array.isArray(builds) && builds.length > 0) {
-        const latestBuild = builds[0];
-        if (latestBuild?.fingerprint) {
-          return latestBuild.fingerprint;
+      if (Array.isArray(builds)) {
+        for (const build of builds) {
+          const fp = build.fingerprint || build.fingerprintHash;
+          if (typeof fp === 'string' && fp.length > 0) {
+            return fp;
+          }
+        }
+      }
+    } catch {}
+
+    try {
+      const { stdout } = await execEas(['update:list', '--limit=5', '--json', '--non-interactive'], {
+        cwd,
+        timeout: 3000,
+      });
+      const updates = JSON.parse(stdout);
+      if (Array.isArray(updates)) {
+        for (const update of updates) {
+          const fp = update.fingerprint || update.fingerprintHash;
+          if (typeof fp === 'string' && fp.length > 0) {
+            return fp;
+          }
         }
       }
     } catch {}
@@ -127,6 +152,16 @@ export function saveStoredFingerprint(cwd: string = process.cwd(), hash: string)
   if (!fs.existsSync(dirPath)) {
     fs.mkdirSync(dirPath, { recursive: true });
   }
+
+  // Write plain fingerprint hash file
   const filePath = path.join(dirPath, FINGERPRINT_FILE_NAME);
   fs.writeFileSync(filePath, hash.trim() + '\n', 'utf-8');
+
+  // Write preview.json metadata file
+  const previewJsonPath = path.join(dirPath, 'preview.json');
+  const metadata = {
+    fingerprint: hash.trim(),
+    timestamp: new Date().toISOString(),
+  };
+  fs.writeFileSync(previewJsonPath, JSON.stringify(metadata, null, 2), 'utf-8');
 }

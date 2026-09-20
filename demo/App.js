@@ -120,7 +120,7 @@ export default function App() {
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>🧪 Interactive Demo Component 2 </Text>
+          <Text style={styles.cardTitle}>🧪 Interactive Demo Component Changed</Text>
           <Text style={styles.bodyText}>
             Try editing this file (<Text style={styles.code}>demo/App.js</Text>) and running <Text style={styles.code}>npx mobile-preview detect</Text>!
           </Text>
