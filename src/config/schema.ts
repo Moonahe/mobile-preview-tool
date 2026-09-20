@@ -34,6 +34,12 @@ export const DetectionConfigSchema = z.object({
   nativePaths: z.array(z.string()).default([
     'android/**',
     'ios/**',
+    '**/android/**',
+    '**/ios/**',
+    '**/app.config.js',
+    '**/app.config.ts',
+    '**/app.json',
+    '**/expo.json',
     'app.config.js',
     'app.config.ts',
     'app.json',

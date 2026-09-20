@@ -42,6 +42,6 @@ describe('Update, Build, and Publish Commands', () => {
       }),
     };
 
-    await expect(runPublish({ updateProvider: mockUpdateProvider })).resolves.not.toThrow();
+    await expect(runPublish({ updateProvider: mockUpdateProvider, base: 'HEAD' })).resolves.not.toThrow();
   }, 30000);
 });

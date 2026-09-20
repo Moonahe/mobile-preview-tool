@@ -56,14 +56,14 @@ export async function detectChanges(
   const matchingNativeFiles = changedFiles.filter((file) => isPathMatchingNativeRules(file, nativePaths));
 
   // Check lockfile or package.json changes
-  const hasPackageJsonChange = changedFiles.includes('package.json');
+  const hasPackageJsonChange = changedFiles.some((f) => f.endsWith('package.json'));
   const hasLockfileChange = changedFiles.some((f) =>
-    ['package-lock.json', 'yarn.lock', 'pnpm-lock.yaml', 'bun.lockb'].includes(f)
+    ['package-lock.json', 'yarn.lock', 'pnpm-lock.yaml', 'bun.lockb'].some((lock) => f.endsWith(lock))
   );
 
   let nativePackageChanges: string[] = [];
   if (config.detection.nativeDependencies && (hasPackageJsonChange || hasLockfileChange)) {
-    const depCheck = await detectPackageJsonNativeChanges(cwd, baseRef, customNativePackages);
+    const depCheck = await detectPackageJsonNativeChanges(cwd, baseRef, customNativePackages, changedFiles);
     if (depCheck.hasNativePackageChange) {
       nativePackageChanges = depCheck.changedPackages;
     }
@@ -71,12 +71,12 @@ export async function detectChanges(
 
   // Check app.json / app.config.js/ts native field changes
   const hasExpoConfigChange = changedFiles.some((f) =>
-    ['app.json', 'app.config.js', 'app.config.ts', 'expo.json'].includes(f)
+    f.endsWith('app.json') || f.endsWith('app.config.js') || f.endsWith('app.config.ts') || f.endsWith('expo.json')
   );
 
   let expoNativeReason: string | undefined;
   if (hasExpoConfigChange) {
-    const expoCheck = await detectExpoConfigNativeChanges(cwd, baseRef);
+    const expoCheck = await detectExpoConfigNativeChanges(cwd, baseRef, changedFiles);
     if (expoCheck.hasExpoConfigNativeChange) {
       expoNativeReason = expoCheck.reason;
     }

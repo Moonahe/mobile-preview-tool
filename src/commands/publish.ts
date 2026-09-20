@@ -15,13 +15,14 @@ export interface PublishCommandOptions {
   buildProvider?: BuildProvider;
   publisher?: ArtifactPublisher;
   dryRun?: boolean;
+  base?: string;
 }
 
 export async function runPublish(options: PublishCommandOptions = {}): Promise<void> {
   const cwd = options.cwd || process.cwd();
   const config = loadConfig(cwd);
 
-  const detection = await detectChanges(config, cwd);
+  const detection = await detectChanges(config, cwd, options.base);
   const commitSha = await getCurrentCommitSha(cwd);
   const branch = await getCurrentBranch(cwd);
 
