@@ -4,7 +4,7 @@ import {
   detectPackageJsonNativeChanges,
   detectExpoConfigNativeChanges,
 } from './native-detector.js';
-import { generateFingerprint, readStoredFingerprint, saveStoredFingerprint } from './fingerprint.js';
+import { generateFingerprint, readStoredFingerprint } from './fingerprint.js';
 import type { MobilePreviewConfig } from '../config/schema.js';
 
 export type DetectionClassification = 'javascript' | 'native' | 'configuration' | 'unknown';
@@ -24,29 +24,24 @@ export async function detectChanges(
   const baseRef = overrideBaseRef || (await getBaseCommit(cwd));
   const changedFiles = await getChangedFiles(cwd, baseRef);
 
-  // Check EAS Fingerprint as primary change detection mechanism
+  // Check EAS Fingerprint if enabled
   if (config.detection.useFingerprint !== false) {
-    const currentFingerprint = await generateFingerprint(cwd, config.preview?.platforms);
+    const currentFingerprint = await generateFingerprint(cwd);
     if (currentFingerprint) {
-      // 1. Read stored fingerprint FIRST before saving current fingerprint to local cache
-      const storedFingerprint = await readStoredFingerprint(cwd, config.publish?.releaseTag);
-
-      // 2. Save current fingerprint for artifact upload and future process steps
-      saveStoredFingerprint(cwd, currentFingerprint);
-
-      if (storedFingerprint && currentFingerprint !== storedFingerprint) {
+      const storedFingerprint = readStoredFingerprint(cwd);
+      if (!storedFingerprint) {
+        return {
+          classification: 'native',
+          nativeChange: true,
+          files: changedFiles,
+          reason: `Initial native build required (no recorded EAS fingerprint found, generated: ${currentFingerprint.slice(0, 8)})`,
+        };
+      } else if (currentFingerprint !== storedFingerprint) {
         return {
           classification: 'native',
           nativeChange: true,
           files: changedFiles,
           reason: `EAS native fingerprint changed (${storedFingerprint.slice(0, 8)} -> ${currentFingerprint.slice(0, 8)})`,
-        };
-      } else if (storedFingerprint && currentFingerprint === storedFingerprint) {
-        return {
-          classification: 'javascript',
-          nativeChange: false,
-          files: changedFiles,
-          reason: `EAS native fingerprint unchanged (${currentFingerprint.slice(0, 8)}). JS/OTA update applicable.`,
         };
       }
     }
@@ -68,14 +63,14 @@ export async function detectChanges(
   const matchingNativeFiles = changedFiles.filter((file) => isPathMatchingNativeRules(file, nativePaths));
 
   // Check lockfile or package.json changes
-  const hasPackageJsonChange = changedFiles.some((f) => f.endsWith('package.json'));
+  const hasPackageJsonChange = changedFiles.includes('package.json');
   const hasLockfileChange = changedFiles.some((f) =>
-    ['package-lock.json', 'yarn.lock', 'pnpm-lock.yaml', 'bun.lockb'].some((lock) => f.endsWith(lock))
+    ['package-lock.json', 'yarn.lock', 'pnpm-lock.yaml', 'bun.lockb'].includes(f)
   );
 
   let nativePackageChanges: string[] = [];
   if (config.detection.nativeDependencies && (hasPackageJsonChange || hasLockfileChange)) {
-    const depCheck = await detectPackageJsonNativeChanges(cwd, baseRef, customNativePackages, changedFiles);
+    const depCheck = await detectPackageJsonNativeChanges(cwd, baseRef, customNativePackages);
     if (depCheck.hasNativePackageChange) {
       nativePackageChanges = depCheck.changedPackages;
     }
@@ -83,12 +78,12 @@ export async function detectChanges(
 
   // Check app.json / app.config.js/ts native field changes
   const hasExpoConfigChange = changedFiles.some((f) =>
-    f.endsWith('app.json') || f.endsWith('app.config.js') || f.endsWith('app.config.ts') || f.endsWith('expo.json')
+    ['app.json', 'app.config.js', 'app.config.ts', 'expo.json'].includes(f)
   );
 
   let expoNativeReason: string | undefined;
   if (hasExpoConfigChange) {
-    const expoCheck = await detectExpoConfigNativeChanges(cwd, baseRef, changedFiles);
+    const expoCheck = await detectExpoConfigNativeChanges(cwd, baseRef);
     if (expoCheck.hasExpoConfigNativeChange) {
       expoNativeReason = expoCheck.reason;
     }

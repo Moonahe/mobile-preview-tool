@@ -57,109 +57,83 @@ export function isPathMatchingNativeRules(filePath: string, nativePaths: string[
 export async function detectPackageJsonNativeChanges(
   cwd: string,
   baseRef: string,
-  customNativePackages: string[],
-  changedFiles: string[] = []
+  customNativePackages: string[]
 ): Promise<{ hasNativePackageChange: boolean; changedPackages: string[] }> {
-  const pkgFiles = changedFiles.filter((f) => f.endsWith('package.json'));
-  const filesToCheck = pkgFiles.length > 0 ? pkgFiles : ['package.json'];
+  const currentContent = await getFileContentAtRef(cwd, 'package.json', 'HEAD');
+  const baseContent = await getFileContentAtRef(cwd, 'package.json', baseRef);
 
-  const changedPackages: string[] = [];
-
-  for (const pkgFile of filesToCheck) {
-    const currentContent = await getFileContentAtRef(cwd, pkgFile, 'HEAD');
-    const baseContent = await getFileContentAtRef(cwd, pkgFile, baseRef);
-
-    if (!currentContent || !baseContent) continue;
-
-    try {
-      const currentPkg = JSON.parse(currentContent);
-      const basePkg = JSON.parse(baseContent);
-
-      const currentDeps = { ...currentPkg.dependencies, ...currentPkg.devDependencies };
-      const baseDeps = { ...basePkg.dependencies, ...basePkg.devDependencies };
-
-      const allKeys = new Set([...Object.keys(currentDeps), ...Object.keys(baseDeps)]);
-
-      for (const pkgName of allKeys) {
-        if (currentDeps[pkgName] !== baseDeps[pkgName]) {
-          if (isKnownNativePackage(pkgName, customNativePackages)) {
-            changedPackages.push(pkgName);
-          }
-        }
-      }
-    } catch {
-      changedPackages.push(`${pkgFile} parsing error`);
-    }
+  if (!currentContent || !baseContent) {
+    return { hasNativePackageChange: false, changedPackages: [] };
   }
 
-  return {
-    hasNativePackageChange: changedPackages.length > 0,
-    changedPackages,
-  };
+  try {
+    const currentPkg = JSON.parse(currentContent);
+    const basePkg = JSON.parse(baseContent);
+
+    const currentDeps = { ...currentPkg.dependencies, ...currentPkg.devDependencies };
+    const baseDeps = { ...basePkg.dependencies, ...basePkg.devDependencies };
+
+    const allKeys = new Set([...Object.keys(currentDeps), ...Object.keys(baseDeps)]);
+    const changedPackages: string[] = [];
+
+    for (const pkgName of allKeys) {
+      if (currentDeps[pkgName] !== baseDeps[pkgName]) {
+        if (isKnownNativePackage(pkgName, customNativePackages)) {
+          changedPackages.push(pkgName);
+        }
+      }
+    }
+
+    return {
+      hasNativePackageChange: changedPackages.length > 0,
+      changedPackages,
+    };
+  } catch {
+    return { hasNativePackageChange: true, changedPackages: ['package.json parsing error'] };
+  }
 }
 
 export async function detectExpoConfigNativeChanges(
   cwd: string,
-  baseRef: string,
-  changedFiles: string[] = []
+  baseRef: string
 ): Promise<{ hasExpoConfigNativeChange: boolean; reason?: string }> {
-  const expoConfigFiles = changedFiles.filter((f) =>
-    f.endsWith('app.json') || f.endsWith('app.config.js') || f.endsWith('app.config.ts') || f.endsWith('expo.json')
-  );
+  const currentAppJson = await getFileContentAtRef(cwd, 'app.json', 'HEAD');
+  const baseAppJson = await getFileContentAtRef(cwd, 'app.json', baseRef);
 
-  const filesToCheck = expoConfigFiles.length > 0 ? expoConfigFiles : ['app.json'];
-
-  for (const configFile of filesToCheck) {
-    const currentContent = await getFileContentAtRef(cwd, configFile, 'HEAD');
-    const baseContent = await getFileContentAtRef(cwd, configFile, baseRef);
-
-    if (!currentContent || !baseContent) {
-      if (currentContent || baseContent) {
-        return {
-          hasExpoConfigNativeChange: true,
-          reason: `Expo config file created or deleted: ${configFile}`,
-        };
-      }
-      continue;
-    }
-
-    try {
-      const currentParsed = JSON.parse(currentContent);
-      const baseParsed = JSON.parse(baseContent);
-      const currentConfig = currentParsed.expo || currentParsed;
-      const baseConfig = baseParsed.expo || baseParsed;
-
-      // Check key fields that alter native builds or OTA updates
-      const nativeFields = [
-        'sdkVersion',
-        'plugins',
-        'android',
-        'ios',
-        'scheme',
-        'userInterfaceStyle',
-        'orientation',
-        'icon',
-        'splash',
-        'notification',
-        'updates',
-        'runtimeVersion',
-        'extra',
-        'jsEngine',
-        'experiments',
-      ];
-
-      for (const field of nativeFields) {
-        if (JSON.stringify(currentConfig[field]) !== JSON.stringify(baseConfig[field])) {
-          return {
-            hasExpoConfigNativeChange: true,
-            reason: `Expo config native field changed in ${configFile}: ${field}`,
-          };
-        }
-      }
-    } catch {
-      return { hasExpoConfigNativeChange: true, reason: `Failed to parse ${configFile}` };
-    }
+  if (!currentAppJson || !baseAppJson) {
+    // If app.json was added or deleted or not present, assume potential config native change if file changed
+    return { hasExpoConfigNativeChange: false };
   }
 
-  return { hasExpoConfigNativeChange: false };
+  try {
+    const currentConfig = JSON.parse(currentAppJson).expo || JSON.parse(currentAppJson);
+    const baseConfig = JSON.parse(baseAppJson).expo || JSON.parse(baseAppJson);
+
+    // Check key fields that alter native builds
+    const nativeFields = [
+      'sdkVersion',
+      'plugins',
+      'android',
+      'ios',
+      'scheme',
+      'userInterfaceStyle',
+      'orientation',
+      'icon',
+      'splash',
+      'notification',
+    ];
+
+    for (const field of nativeFields) {
+      if (JSON.stringify(currentConfig[field]) !== JSON.stringify(baseConfig[field])) {
+        return {
+          hasExpoConfigNativeChange: true,
+          reason: `Expo config native field changed: ${field}`,
+        };
+      }
+    }
+
+    return { hasExpoConfigNativeChange: false };
+  } catch {
+    return { hasExpoConfigNativeChange: true, reason: 'Failed to parse app.json' };
+  }
 }

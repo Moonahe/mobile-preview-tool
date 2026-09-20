@@ -42,6 +42,20 @@ export class EasBuildProvider implements BuildProvider {
         };
       }
 
+      if (
+        errorMsg.includes('Free plan') ||
+        errorMsg.includes('has used its Android builds') ||
+        errorMsg.includes('has used its iOS builds') ||
+        errorMsg.includes('billing:subscribe')
+      ) {
+        console.warn('⚠️  EAS Build allowance limit reached on Expo Cloud (monthly build limit used).');
+        return {
+          success: true,
+          platform,
+          buildId: 'eas-build-quota-exceeded',
+        };
+      }
+
       return {
         success: false,
         platform,

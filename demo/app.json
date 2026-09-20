@@ -12,14 +12,6 @@
       "resizeMode": "contain",
       "backgroundColor": "#2563eb"
     },
-    "updates": {
-      "url": "https://u.expo.dev/850543b1-360d-4655-806b-92386cb2aefc",
-      "checkAutomatically": "ON_LOAD",
-      "fallbackToCacheTimeout": 0
-    },
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.moonahesteam.demopreview"

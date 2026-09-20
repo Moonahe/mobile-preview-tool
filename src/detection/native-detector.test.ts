@@ -10,19 +10,11 @@ describe('native-detector', () => {
     expect(isKnownNativePackage('my-custom-native-pkg', ['my-custom-native-pkg'])).toBe(true);
   });
 
-  it('matches paths against native rules including subdirectories', () => {
-    const rules = [
-      'android/**',
-      'ios/**',
-      '**/android/**',
-      '**/ios/**',
-      '**/app.json',
-      'app.json',
-    ];
+  it('matches paths against native rules', () => {
+    const rules = ['android/**', 'ios/**', 'app.json'];
     expect(isPathMatchingNativeRules('android/app/build.gradle', rules)).toBe(true);
     expect(isPathMatchingNativeRules('ios/Podfile', rules)).toBe(true);
     expect(isPathMatchingNativeRules('app.json', rules)).toBe(true);
-    expect(isPathMatchingNativeRules('demo/app.json', rules)).toBe(true);
     expect(isPathMatchingNativeRules('src/App.tsx', rules)).toBe(false);
   });
 });

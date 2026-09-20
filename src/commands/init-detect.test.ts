@@ -34,5 +34,5 @@ describe('Init and Detect Commands', () => {
     expect(parsed).toHaveProperty('nativeChange');
 
     consoleSpy.mockRestore();
-  }, 30000);
+  });
 });

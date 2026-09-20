@@ -18,10 +18,10 @@ describe('EAS Fingerprint Detection', () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  it('reads and saves stored fingerprint correctly', async () => {
-    expect(await readStoredFingerprint(tmpDir)).toBeNull();
+  it('reads and saves stored fingerprint correctly', () => {
+    expect(readStoredFingerprint(tmpDir)).toBeNull();
 
     saveStoredFingerprint(tmpDir, 'hash-12345678');
-    expect(await readStoredFingerprint(tmpDir)).toBe('hash-12345678');
+    expect(readStoredFingerprint(tmpDir)).toBe('hash-12345678');
   });
 });
